@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppServicosRouteImport } from './routes/_app.servicos'
 import { Route as AppFuncionariosRouteImport } from './routes/_app.funcionarios'
 import { Route as AppEmpresasRouteImport } from './routes/_app.empresas'
 import { Route as AppClientesRouteImport } from './routes/_app.clientes'
@@ -23,6 +24,11 @@ const AppRoute = AppRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppServicosRoute = AppServicosRouteImport.update({
+  id: '/servicos',
+  path: '/servicos',
   getParentRoute: () => AppRoute,
 } as any)
 const AppFuncionariosRoute = AppFuncionariosRouteImport.update({
@@ -52,12 +58,14 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof AppClientesRoute
   '/empresas': typeof AppEmpresasRoute
   '/funcionarios': typeof AppFuncionariosRoute
+  '/servicos': typeof AppServicosRoute
 }
 export interface FileRoutesByTo {
   '/cidades': typeof AppCidadesRoute
   '/clientes': typeof AppClientesRoute
   '/empresas': typeof AppEmpresasRoute
   '/funcionarios': typeof AppFuncionariosRoute
+  '/servicos': typeof AppServicosRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,26 @@ export interface FileRoutesById {
   '/_app/clientes': typeof AppClientesRoute
   '/_app/empresas': typeof AppEmpresasRoute
   '/_app/funcionarios': typeof AppFuncionariosRoute
+  '/_app/servicos': typeof AppServicosRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cidades' | '/clientes' | '/empresas' | '/funcionarios'
+  fullPaths:
+    | '/'
+    | '/cidades'
+    | '/clientes'
+    | '/empresas'
+    | '/funcionarios'
+    | '/servicos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/cidades' | '/clientes' | '/empresas' | '/funcionarios' | '/'
+  to:
+    | '/cidades'
+    | '/clientes'
+    | '/empresas'
+    | '/funcionarios'
+    | '/servicos'
+    | '/'
   id:
     | '__root__'
     | '/_app'
@@ -81,6 +102,7 @@ export interface FileRouteTypes {
     | '/_app/clientes'
     | '/_app/empresas'
     | '/_app/funcionarios'
+    | '/_app/servicos'
     | '/_app/'
   fileRoutesById: FileRoutesById
 }
@@ -102,6 +124,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/servicos': {
+      id: '/_app/servicos'
+      path: '/servicos'
+      fullPath: '/servicos'
+      preLoaderRoute: typeof AppServicosRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/funcionarios': {
@@ -140,6 +169,7 @@ interface AppRouteChildren {
   AppClientesRoute: typeof AppClientesRoute
   AppEmpresasRoute: typeof AppEmpresasRoute
   AppFuncionariosRoute: typeof AppFuncionariosRoute
+  AppServicosRoute: typeof AppServicosRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -148,6 +178,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppClientesRoute: AppClientesRoute,
   AppEmpresasRoute: AppEmpresasRoute,
   AppFuncionariosRoute: AppFuncionariosRoute,
+  AppServicosRoute: AppServicosRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
