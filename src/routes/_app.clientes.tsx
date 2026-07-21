@@ -18,6 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_app/clientes")({ component: ClientesPage });
 
@@ -195,7 +196,7 @@ function ClientesPage() {
               )} />
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <FormLabel>Telefones</FormLabel>
+                  <Label>Telefones</Label>
                   <Button type="button" size="sm" variant="outline" onClick={() => phones.append({ telefone: "" })}><Plus className="h-3 w-3" /> Adicionar</Button>
                 </div>
                 {phones.fields.map((f, i) => (
