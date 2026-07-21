@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppEmpresasRouteImport } from './routes/_app.empresas'
 import { Route as AppCidadesRouteImport } from './routes/_app.cidades'
 
 const AppRoute = AppRouteImport.update({
@@ -22,6 +23,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEmpresasRoute = AppEmpresasRouteImport.update({
+  id: '/empresas',
+  path: '/empresas',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCidadesRoute = AppCidadesRouteImport.update({
   id: '/cidades',
   path: '/cidades',
@@ -31,23 +37,26 @@ const AppCidadesRoute = AppCidadesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/cidades': typeof AppCidadesRoute
+  '/empresas': typeof AppEmpresasRoute
 }
 export interface FileRoutesByTo {
   '/cidades': typeof AppCidadesRoute
+  '/empresas': typeof AppEmpresasRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_app/cidades': typeof AppCidadesRoute
+  '/_app/empresas': typeof AppEmpresasRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cidades'
+  fullPaths: '/' | '/cidades' | '/empresas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/cidades' | '/'
-  id: '__root__' | '/_app' | '/_app/cidades' | '/_app/'
+  to: '/cidades' | '/empresas' | '/'
+  id: '__root__' | '/_app' | '/_app/cidades' | '/_app/empresas' | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -70,6 +79,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/empresas': {
+      id: '/_app/empresas'
+      path: '/empresas'
+      fullPath: '/empresas'
+      preLoaderRoute: typeof AppEmpresasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/cidades': {
       id: '/_app/cidades'
       path: '/cidades'
@@ -82,11 +98,13 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppCidadesRoute: typeof AppCidadesRoute
+  AppEmpresasRoute: typeof AppEmpresasRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppCidadesRoute: AppCidadesRoute,
+  AppEmpresasRoute: AppEmpresasRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
