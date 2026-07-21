@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppFuncionariosRouteImport } from './routes/_app.funcionarios'
 import { Route as AppEmpresasRouteImport } from './routes/_app.empresas'
 import { Route as AppClientesRouteImport } from './routes/_app.clientes'
 import { Route as AppCidadesRouteImport } from './routes/_app.cidades'
@@ -22,6 +23,11 @@ const AppRoute = AppRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFuncionariosRoute = AppFuncionariosRouteImport.update({
+  id: '/funcionarios',
+  path: '/funcionarios',
   getParentRoute: () => AppRoute,
 } as any)
 const AppEmpresasRoute = AppEmpresasRouteImport.update({
@@ -45,11 +51,13 @@ export interface FileRoutesByFullPath {
   '/cidades': typeof AppCidadesRoute
   '/clientes': typeof AppClientesRoute
   '/empresas': typeof AppEmpresasRoute
+  '/funcionarios': typeof AppFuncionariosRoute
 }
 export interface FileRoutesByTo {
   '/cidades': typeof AppCidadesRoute
   '/clientes': typeof AppClientesRoute
   '/empresas': typeof AppEmpresasRoute
+  '/funcionarios': typeof AppFuncionariosRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -58,19 +66,21 @@ export interface FileRoutesById {
   '/_app/cidades': typeof AppCidadesRoute
   '/_app/clientes': typeof AppClientesRoute
   '/_app/empresas': typeof AppEmpresasRoute
+  '/_app/funcionarios': typeof AppFuncionariosRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cidades' | '/clientes' | '/empresas'
+  fullPaths: '/' | '/cidades' | '/clientes' | '/empresas' | '/funcionarios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/cidades' | '/clientes' | '/empresas' | '/'
+  to: '/cidades' | '/clientes' | '/empresas' | '/funcionarios' | '/'
   id:
     | '__root__'
     | '/_app'
     | '/_app/cidades'
     | '/_app/clientes'
     | '/_app/empresas'
+    | '/_app/funcionarios'
     | '/_app/'
   fileRoutesById: FileRoutesById
 }
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/funcionarios': {
+      id: '/_app/funcionarios'
+      path: '/funcionarios'
+      fullPath: '/funcionarios'
+      preLoaderRoute: typeof AppFuncionariosRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/empresas': {
@@ -122,6 +139,7 @@ interface AppRouteChildren {
   AppCidadesRoute: typeof AppCidadesRoute
   AppClientesRoute: typeof AppClientesRoute
   AppEmpresasRoute: typeof AppEmpresasRoute
+  AppFuncionariosRoute: typeof AppFuncionariosRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -129,6 +147,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCidadesRoute: AppCidadesRoute,
   AppClientesRoute: AppClientesRoute,
   AppEmpresasRoute: AppEmpresasRoute,
+  AppFuncionariosRoute: AppFuncionariosRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
