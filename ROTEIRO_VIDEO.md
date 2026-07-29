@@ -6,7 +6,7 @@ Todos os integrantes devem falar. Sugestão de divisão e tempo:
 | --- | --- | --- | --- |
 | 1. Abertura | 2 min | Integrantes, tema do trabalho, objetivo do sistema | Integrante 1 |
 | 2. Modelagem do banco | 6 min | Modelo conceitual/lógico, entidades, relacionamentos, especialização `servicos → guindastes/transportes` | Integrante 2 |
-| 3. Estrutura das tabelas e restrições | 6 min | Percorrer `supabase/schema.sql`: tipos, PKs, FKs, `UNIQUE`, `CHECK` (`chk_salario`, `chk_preco_hora`, `chk_tempo`, `chk_datas`) | Integrante 3 |
+| 3. Estrutura das tabelas e restrições | 6 min | Percorrer `database/schema.sql`: tipos, PKs, FKs, `UNIQUE`, `CHECK` (`chk_salario`, `chk_preco_hora`, `chk_tempo`, `chk_datas`) | Integrante 3 |
 | 4. Funções e gatilhos | 5 min | `fn_calcular_preco`, `fn_total_pedido`, `fn_guindaste`, `fn_transporte` — mostrar a execução no `psql` | Integrante 4 |
 | 5. Arquitetura do programa | 4 min | React + TypeScript + Tailwind + shadcn/ui, TanStack Router/Query, validação Zod, organização de pastas | Integrante 5 |
 | 6. Demonstração funcionando | 6 min | CRUD de cada tela, busca, ordenação, validação, exclusão com confirmação, pedido com itens e total automático | Todos |
