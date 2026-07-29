@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Pencil, Trash2, Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { empresasApi } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { SortableHeader, sortData, toggleSort, type SortState } from "@/components/sortable-header";
@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_app/empresas")({ component: EmpresasPage });
 
-type Empresa = { id: number; nome: string; endereco: string; telefones_empresa: { id: number; telefone: string }[] };
+type Empresa = { id: number; nome: string; endereco: string; telefones_empresa: { id: number; telefone: string | null }[] };
 type SortKey = "nome" | "endereco";
 
 const schema = z.object({
@@ -40,11 +40,7 @@ function EmpresasPage() {
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["empresas"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("empresas").select("id,nome,endereco,telefones_empresa(id,telefone)").order("nome");
-      if (error) throw error;
-      return data as Empresa[];
-    },
+    queryFn: () => empresasApi.list(),
   });
 
   const form = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { nome: "", endereco: "", telefones: [] } });
@@ -53,27 +49,21 @@ function EmpresasPage() {
   const openNew = () => { setEditing(null); form.reset({ nome: "", endereco: "", telefones: [{ telefone: "" }] }); setDialogOpen(true); };
   const openEdit = (e: Empresa) => {
     setEditing(e);
-    form.reset({ nome: e.nome, endereco: e.endereco, telefones: e.telefones_empresa.map((t) => ({ telefone: t.telefone })) });
+    form.reset({ nome: e.nome, endereco: e.endereco, telefones: e.telefones_empresa.map((t) => ({ telefone: t.telefone ?? "" })) });
     setDialogOpen(true);
   };
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormData) => {
-      let empresaId: number;
+      const payload = {
+        nome: values.nome,
+        endereco: values.endereco,
+        telefones: values.telefones.map((t) => t.telefone),
+      };
       if (editing) {
-        const { error } = await supabase.from("empresas").update({ nome: values.nome, endereco: values.endereco }).eq("id", editing.id);
-        if (error) throw error;
-        empresaId = editing.id;
-        const { error: delErr } = await supabase.from("telefones_empresa").delete().eq("empresa_id", empresaId);
-        if (delErr) throw delErr;
+        await empresasApi.update(editing.id, payload);
       } else {
-        const { data, error } = await supabase.from("empresas").insert({ nome: values.nome, endereco: values.endereco }).select("id").single();
-        if (error) throw error;
-        empresaId = data.id;
-      }
-      if (values.telefones.length > 0) {
-        const { error } = await supabase.from("telefones_empresa").insert(values.telefones.map((t) => ({ empresa_id: empresaId, telefone: t.telefone })));
-        if (error) throw error;
+        await empresasApi.create(payload);
       }
     },
     onSuccess: () => {
@@ -86,11 +76,7 @@ function EmpresasPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await supabase.from("telefones_empresa").delete().eq("empresa_id", id);
-      const { error } = await supabase.from("empresas").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: number) => empresasApi.remove(id),
     onSuccess: () => {
       toast.success("Empresa excluída");
       qc.invalidateQueries({ queryKey: ["empresas"] });

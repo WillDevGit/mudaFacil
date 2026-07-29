@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { empresasApi, funcionariosApi } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { SortableHeader, sortData, toggleSort, type SortState } from "@/components/sortable-header";
@@ -49,19 +49,11 @@ function FuncionariosPage() {
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["funcionarios"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("funcionarios").select("cpf,nome,rg,endereco,telefone,salario,tipo,empresa_id,empresas(id,nome)").order("nome");
-      if (error) throw error;
-      return data as unknown as Funcionario[];
-    },
+    queryFn: () => funcionariosApi.list() as Promise<Funcionario[]>,
   });
   const { data: empresas = [] } = useQuery({
     queryKey: ["empresas-select"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("empresas").select("id,nome").order("nome");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => empresasApi.list(),
   });
 
   const form = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { cpf: "", nome: "", rg: "", endereco: "", telefone: "", salario: "", tipo: "", empresa_id: undefined } });
@@ -92,11 +84,9 @@ function FuncionariosPage() {
         empresa_id: values.empresa_id ? Number(values.empresa_id) : null,
       };
       if (editing) {
-        const { error } = await supabase.from("funcionarios").update(payload).eq("cpf", editing.cpf);
-        if (error) throw error;
+        await funcionariosApi.update(editing.cpf, payload);
       } else {
-        const { error } = await supabase.from("funcionarios").insert(payload);
-        if (error) throw error;
+        await funcionariosApi.create(payload);
       }
     },
     onSuccess: () => {
@@ -109,10 +99,7 @@ function FuncionariosPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (cpf: string) => {
-      const { error } = await supabase.from("funcionarios").delete().eq("cpf", cpf);
-      if (error) throw error;
-    },
+    mutationFn: (cpf: string) => funcionariosApi.remove(cpf),
     onSuccess: () => {
       toast.success("Funcionário excluído");
       qc.invalidateQueries({ queryKey: ["funcionarios"] });
