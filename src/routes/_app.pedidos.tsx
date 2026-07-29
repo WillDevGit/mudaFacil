@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Pencil, Trash2, Loader2, Plus, X, Eye } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { cidadesApi, clientesApi, empresasApi, funcionariosApi, pedidosApi, servicosApi } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { SortableHeader, sortData, toggleSort, type SortState } from "@/components/sortable-header";
@@ -67,35 +67,28 @@ function PedidosPage() {
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["pedidos"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pedidos")
-        .select("codigo,cliente_id,empresa_id,funcionario_cpf,cidade_partida,cidade_destino,endereco_partida,endereco_destino,data_solicitacao,data_resolucao,aceito,preco_total,clientes(codigo,nome),empresas(id,nome),itens_pedido(id,servico_id,tempo_duracao,acrescimo,bonus,preco,servicos(id,nome))")
-        .order("codigo", { ascending: false });
-      if (error) throw error;
-      return data as unknown as Pedido[];
-    },
+    queryFn: () => pedidosApi.list() as Promise<Pedido[]>,
   });
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes-select"],
-    queryFn: async () => (await supabase.from("clientes").select("codigo,nome").order("nome")).data ?? [],
+    queryFn: () => clientesApi.list(),
   });
   const { data: empresas = [] } = useQuery({
     queryKey: ["empresas-select"],
-    queryFn: async () => (await supabase.from("empresas").select("id,nome").order("nome")).data ?? [],
+    queryFn: () => empresasApi.list(),
   });
   const { data: funcionarios = [] } = useQuery({
     queryKey: ["funcionarios-select"],
-    queryFn: async () => (await supabase.from("funcionarios").select("cpf,nome").order("nome")).data ?? [],
+    queryFn: () => funcionariosApi.list(),
   });
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades-select"],
-    queryFn: async () => (await supabase.from("cidades").select("id,nome,estado").order("nome")).data ?? [],
+    queryFn: () => cidadesApi.list(),
   });
   const { data: servicos = [] } = useQuery({
     queryKey: ["servicos-select"],
-    queryFn: async () => (await supabase.from("servicos").select("id,nome,tipo,preco_hora").order("nome")).data ?? [],
+    queryFn: () => servicosApi.list(),
   });
 
   const form = useForm<FormData>({
@@ -150,26 +143,19 @@ function PedidosPage() {
         data_resolucao: values.data_resolucao || null,
         aceito: values.aceito,
       };
-      let codigo: number;
-      if (editing) {
-        const { error } = await supabase.from("pedidos").update(payload).eq("codigo", editing.codigo);
-        if (error) throw error;
-        codigo = editing.codigo;
-        await supabase.from("itens_pedido").delete().eq("pedido_id", codigo);
-      } else {
-        const { data, error } = await supabase.from("pedidos").insert(payload).select("codigo").single();
-        if (error) throw error;
-        codigo = data.codigo;
-      }
-      const rows = values.itens.map((i) => ({
-        pedido_id: codigo,
+      // Preço dos itens e total do pedido continuam sendo calculados
+      // pelas triggers do PostgreSQL.
+      const itens = values.itens.map((i) => ({
         servico_id: Number(i.servico_id),
         tempo_duracao: Number(i.tempo_duracao),
         acrescimo: i.acrescimo ? Number(i.acrescimo) : 0,
         bonus: i.bonus ? Number(i.bonus) : 0,
       }));
-      const { error } = await supabase.from("itens_pedido").insert(rows);
-      if (error) throw error;
+      if (editing) {
+        await pedidosApi.update(editing.codigo, { ...payload, itens });
+      } else {
+        await pedidosApi.create({ ...payload, itens });
+      }
     },
     onSuccess: () => {
       toast.success(editing ? "Pedido atualizado" : "Pedido criado");
@@ -181,11 +167,7 @@ function PedidosPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (codigo: number) => {
-      await supabase.from("itens_pedido").delete().eq("pedido_id", codigo);
-      const { error } = await supabase.from("pedidos").delete().eq("codigo", codigo);
-      if (error) throw error;
-    },
+    mutationFn: (codigo: number) => pedidosApi.remove(codigo),
     onSuccess: () => {
       toast.success("Pedido excluído");
       qc.invalidateQueries({ queryKey: ["pedidos"] });
