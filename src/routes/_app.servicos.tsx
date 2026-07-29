@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { servicosApi } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { SortableHeader, sortData, toggleSort, type SortState } from "@/components/sortable-header";
@@ -50,14 +50,7 @@ function ServicosPage() {
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["servicos"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("servicos")
-        .select("id,nome,preco_hora,tipo,guindastes(tamanho_base,altura,bonus),transportes(limite_carga,percentual_acrescimo)")
-        .order("nome");
-      if (error) throw error;
-      return data as unknown as Servico[];
-    },
+    queryFn: () => servicosApi.list() as Promise<Servico[]>,
   });
 
   const form = useForm<FormData>({
@@ -87,35 +80,22 @@ function ServicosPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormData) => {
-      const base = { nome: values.nome, preco_hora: Number(values.preco_hora) };
-      let id: number;
+      // A especialização (guindaste/transporte) é aplicada pelo backend numa
+      // única transação; as triggers do banco definem servicos.tipo.
+      const payload = {
+        nome: values.nome,
+        preco_hora: Number(values.preco_hora),
+        tipo: values.tipo,
+        tamanho_base: values.tamanho_base ? Number(values.tamanho_base) : null,
+        altura: values.altura ? Number(values.altura) : null,
+        bonus: values.bonus ? Number(values.bonus) : null,
+        limite_carga: values.limite_carga ? Number(values.limite_carga) : null,
+        percentual_acrescimo: values.percentual_acrescimo ? Number(values.percentual_acrescimo) : null,
+      };
       if (editing) {
-        const { error } = await supabase.from("servicos").update(base).eq("id", editing.id);
-        if (error) throw error;
-        id = editing.id;
-        // remove specialização anterior se mudou de tipo
-        await supabase.from("guindastes").delete().eq("servico_id", id);
-        await supabase.from("transportes").delete().eq("servico_id", id);
+        await servicosApi.update(editing.id, payload);
       } else {
-        const { data, error } = await supabase.from("servicos").insert(base).select("id").single();
-        if (error) throw error;
-        id = data.id;
-      }
-      if (values.tipo === "GUINDASTE") {
-        const { error } = await supabase.from("guindastes").insert({
-          servico_id: id,
-          tamanho_base: values.tamanho_base ? Number(values.tamanho_base) : null,
-          altura: values.altura ? Number(values.altura) : null,
-          bonus: values.bonus ? Number(values.bonus) : null,
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("transportes").insert({
-          servico_id: id,
-          limite_carga: values.limite_carga ? Number(values.limite_carga) : null,
-          percentual_acrescimo: values.percentual_acrescimo ? Number(values.percentual_acrescimo) : null,
-        });
-        if (error) throw error;
+        await servicosApi.create(payload);
       }
     },
     onSuccess: () => {
@@ -128,12 +108,7 @@ function ServicosPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await supabase.from("guindastes").delete().eq("servico_id", id);
-      await supabase.from("transportes").delete().eq("servico_id", id);
-      const { error } = await supabase.from("servicos").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: number) => servicosApi.remove(id),
     onSuccess: () => {
       toast.success("Serviço excluído");
       qc.invalidateQueries({ queryKey: ["servicos"] });

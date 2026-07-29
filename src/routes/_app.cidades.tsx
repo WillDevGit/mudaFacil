@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { cidadesApi } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { SortableHeader, sortData, toggleSort, type SortState } from "@/components/sortable-header";
@@ -38,11 +38,7 @@ function CidadesPage() {
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["cidades"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("cidades").select("*").order("nome");
-      if (error) throw error;
-      return data as Cidade[];
-    },
+    queryFn: () => cidadesApi.list(),
   });
 
   const form = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { nome: "", estado: "" } });
@@ -62,11 +58,9 @@ function CidadesPage() {
     mutationFn: async (values: FormData) => {
       const payload = { nome: values.nome, estado: values.estado.toUpperCase() };
       if (editing) {
-        const { error } = await supabase.from("cidades").update(payload).eq("id", editing.id);
-        if (error) throw error;
+        await cidadesApi.update(editing.id, payload);
       } else {
-        const { error } = await supabase.from("cidades").insert(payload);
-        if (error) throw error;
+        await cidadesApi.create(payload);
       }
     },
     onSuccess: () => {
@@ -79,10 +73,7 @@ function CidadesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const { error } = await supabase.from("cidades").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: number) => cidadesApi.remove(id),
     onSuccess: () => {
       toast.success("Cidade excluída");
       qc.invalidateQueries({ queryKey: ["cidades"] });

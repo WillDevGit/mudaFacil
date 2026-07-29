@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Pencil, Trash2, Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { cidadesApi, clientesApi } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { SortableHeader, sortData, toggleSort, type SortState } from "@/components/sortable-header";
@@ -49,23 +49,12 @@ function ClientesPage() {
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["clientes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clientes")
-        .select("codigo,cpf,nome,rg,endereco,cidade_id,cidades(id,nome,estado),telefones_cliente(id,telefone)")
-        .order("nome");
-      if (error) throw error;
-      return data as unknown as Cliente[];
-    },
+    queryFn: () => clientesApi.list() as Promise<Cliente[]>,
   });
 
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("cidades").select("id,nome,estado").order("nome");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => cidadesApi.list(),
   });
 
   const form = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { cpf: "", nome: "", rg: "", endereco: "", cidade_id: undefined, telefones: [] } });
@@ -92,21 +81,12 @@ function ClientesPage() {
         cpf: values.cpf, nome: values.nome,
         rg: values.rg || null, endereco: values.endereco || null,
         cidade_id: values.cidade_id ? Number(values.cidade_id) : null,
+        telefones: values.telefones.map((t) => t.telefone),
       };
-      let codigo: number;
       if (editing) {
-        const { error } = await supabase.from("clientes").update(payload).eq("codigo", editing.codigo);
-        if (error) throw error;
-        codigo = editing.codigo;
-        await supabase.from("telefones_cliente").delete().eq("cliente_id", codigo);
+        await clientesApi.update(editing.codigo, payload);
       } else {
-        const { data, error } = await supabase.from("clientes").insert(payload).select("codigo").single();
-        if (error) throw error;
-        codigo = data.codigo;
-      }
-      if (values.telefones.length > 0) {
-        const { error } = await supabase.from("telefones_cliente").insert(values.telefones.map((t) => ({ cliente_id: codigo, telefone: t.telefone })));
-        if (error) throw error;
+        await clientesApi.create(payload);
       }
     },
     onSuccess: () => {
@@ -119,11 +99,7 @@ function ClientesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (codigo: number) => {
-      await supabase.from("telefones_cliente").delete().eq("cliente_id", codigo);
-      const { error } = await supabase.from("clientes").delete().eq("codigo", codigo);
-      if (error) throw error;
-    },
+    mutationFn: (codigo: number) => clientesApi.remove(codigo),
     onSuccess: () => {
       toast.success("Cliente excluído");
       qc.invalidateQueries({ queryKey: ["clientes"] });
